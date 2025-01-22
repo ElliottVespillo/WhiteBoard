@@ -39,6 +39,7 @@
         let brushSize = 5;
         let isEraser = false;
 
+        // Werkzeug für das Zeichnen
         document.getElementById('colorPicker').addEventListener('change', (e) => {
             color = e.target.value;
             isEraser = false;
@@ -57,6 +58,7 @@
             socket.emit('clear');  // Löschen an Server senden
         });
 
+        // Zeichnen mit der Maus
         function startDrawing(e) {
             isDrawing = true;
             [lastX, lastY] = getCoordinates(e);
@@ -81,6 +83,7 @@
             ];
         }
 
+        // Linien auf dem Canvas zeichnen
         function drawLine(x1, y1, x2, y2, color, size, emit = true) {
             ctx.beginPath();
             ctx.moveTo(x1, y1);
@@ -102,6 +105,7 @@
             }
         }
 
+        // Event-Listener für Maus- und Touch-Events
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
@@ -117,6 +121,7 @@
         });
         canvas.addEventListener('touchend', stopDrawing);
 
+        // Empfange Ereignisse vom Server
         socket.on('connect', () => {
             console.log('Connected to server');
         });
@@ -154,6 +159,7 @@
             });
         });
 
+        // Fenstergröße ändern
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
