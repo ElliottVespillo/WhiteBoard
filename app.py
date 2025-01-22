@@ -4,62 +4,53 @@ import json
 import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'geheimnis!'
+app.config['SECRET_KEY'] = 'geheimnis!'  # Dein Geheimschlüssel
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Der absolute Pfad zur Datei, sicherstellen, dass der Pfad stimmt
-DRAWINGS_FILE = os.path.join(os.getcwd(), 'drawings.json')
+DRAWINGS_FILE = 'drawings.json'  # Dateiname für die Zeichnungen
 
 def load_drawings():
-    try:
-        # Überprüfe, ob die Datei existiert und lade sie
-        if os.path.exists(DRAWINGS_FILE):
-            with open(DRAWINGS_FILE, 'r') as file:
-                try:
-                    return json.load(file)
-                except json.JSONDecodeError:
-                    print("Fehler beim Laden der Zeichnungen.")
-                    return []
-        else:
-            print(f"{DRAWINGS_FILE} existiert nicht, eine neue Datei wird erstellt.")
-            return []
-    except Exception as e:
-        print(f"Fehler beim Laden der Datei {DRAWINGS_FILE}: {e}")
+    """Lädt die gespeicherten Zeichnungen aus der JSON-Datei."""
+    if os.path.exists(DRAWINGS_FILE):
+        with open(DRAWINGS_FILE, 'r') as file:
+            try:
+                return json.load(file)
+            except json.JSONDecodeError:
+                print("Fehler beim Laden der Zeichnungen.")
+                return []
+    else:
         return []
 
 def save_drawings(drawings):
-    try:
-        # Speichern der Zeichnungen in der JSON-Datei
-        with open(DRAWINGS_FILE, 'w') as file:
-            json.dump(drawings, file)
-    except Exception as e:
-        print(f"Fehler beim Speichern der Zeichnungen: {e}")
+    """Speichert die Zeichnungen in der JSON-Datei."""
+    with open(DRAWINGS_FILE, 'w') as file:
+        json.dump(drawings, file)
 
 @app.route('/')
 def index():
+    """Lädt die Hauptseite (index.html)."""
     return render_template('index.html')
 
 @socketio.on('connect')
 def handle_connect():
-    # Laden der Zeichnungen beim ersten Verbindungsaufbau
-    drawings = load_drawings()
-    emit('load_drawings', drawings)
+    """Wird aufgerufen, wenn der Client eine Verbindung herstellt."""
+    drawings = load_drawings()  # Zeichnungen laden
+    emit('load_drawings', drawings)  # Zeichnungen an den Client senden
 
 @socketio.on('draw')
 def handle_draw(data):
-    # Zeichnungen empfangen und speichern
-    drawings = load_drawings()
-    drawings.append(data)
-    save_drawings(drawings)
-    emit('draw', data, broadcast=True, include_self=False)
+    """Wird aufgerufen, wenn der Client eine Zeichnung sendet."""
+    drawings = load_drawings()  # Zeichnungen laden
+    drawings.append(data)  # Neue Zeichnung hinzufügen
+    save_drawings(drawings)  # Zeichnungen speichern
+    emit('draw', data, broadcast=True, include_self=False)  # Zeichnung an alle Clients senden
 
 @socketio.on('clear')
 def handle_clear():
-    # Alle Zeichnungen löschen
-    save_drawings([])
-    emit('clear', broadcast=True)
+    """Wird aufgerufen, wenn der Client den Bildschirm löschen möchte."""
+    save_drawings([])  # Alle Zeichnungen löschen
+    emit('clear', broadcast=True)  # Allen Clients mitteilen, dass der Bildschirm gelöscht wurde
 
 if __name__ == '__main__':
-    # Holen des Ports aus der Umgebung (Render setzt diesen Port automatisch)
-    port = os.environ.get("PORT", 5000)  # Falls kein Port gesetzt ist, benutze 5000 als Fallback
-    socketio.run(app, host='0.0.0.0', port=port)  # Host auf 0.0.0.0 setzen, damit es überall zugänglich ist
+    port = os.environ.get("PORT", 5000)  # Render setzt den Port automatisch
+    socketio.run(app, host='0.0.0.0', port=port)  # Server starten
