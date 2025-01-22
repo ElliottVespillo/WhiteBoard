@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Installiere die Abhängigkeiten
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Port-Expose
 EXPOSE 5000
