@@ -1,17 +1,17 @@
-# Verwende ein Python-Basis-Image
+# Verwende Python 3 Basis-Image
 FROM python:3.9-slim
 
-# Arbeitsverzeichnis im Container
+# Setze das Arbeitsverzeichnis im Container
 WORKDIR /app
 
 # Kopiere alle Dateien ins Container-Verzeichnis
 COPY . .
 
-# Installiere die Abhängigkeiten
+# Installiere die Python-Abhängigkeiten
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Port-Expose
+# Exponiere den Port 5000
 EXPOSE 5000
 
-# Startbefehl für die Flask-App
-CMD ["python", "app.py"]
+# Setze den Startbefehl
+CMD ["python3", "app.py"]
