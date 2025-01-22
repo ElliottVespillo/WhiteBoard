@@ -54,7 +54,7 @@
         });
 
         document.getElementById('clear').addEventListener('click', () => {
-            socket.emit('clear');
+            socket.emit('clear');  // Löschen an Server senden
         });
 
         function startDrawing(e) {
@@ -157,7 +157,7 @@
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            socket.emit('clear');
+            socket.emit('clear');  // Auf Bildschirmgrößeänderung Bildschirm löschen
         });
     </script>
 </body>
