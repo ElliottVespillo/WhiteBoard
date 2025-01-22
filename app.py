@@ -7,23 +7,33 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'geheimnis!'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-DRAWINGS_FILE = 'drawings.json'
+# Der absolute Pfad zur Datei, sicherstellen, dass der Pfad stimmt
+DRAWINGS_FILE = os.path.join(os.getcwd(), 'drawings.json')
 
 def load_drawings():
-    if os.path.exists(DRAWINGS_FILE):
-        with open(DRAWINGS_FILE, 'r') as file:
-            try:
-                drawings = json.load(file)
-                return drawings if isinstance(drawings, list) else []
-            except json.JSONDecodeError:
-                print("Fehler beim Laden der Zeichnungen.")
-                return []
-    else:
+    try:
+        # Überprüfe, ob die Datei existiert und lade sie
+        if os.path.exists(DRAWINGS_FILE):
+            with open(DRAWINGS_FILE, 'r') as file:
+                try:
+                    return json.load(file)
+                except json.JSONDecodeError:
+                    print("Fehler beim Laden der Zeichnungen.")
+                    return []
+        else:
+            print(f"{DRAWINGS_FILE} existiert nicht, eine neue Datei wird erstellt.")
+            return []
+    except Exception as e:
+        print(f"Fehler beim Laden der Datei {DRAWINGS_FILE}: {e}")
         return []
 
 def save_drawings(drawings):
-    with open(DRAWINGS_FILE, 'w') as file:
-        json.dump(drawings, file)
+    try:
+        # Speichern der Zeichnungen in der JSON-Datei
+        with open(DRAWINGS_FILE, 'w') as file:
+            json.dump(drawings, file)
+    except Exception as e:
+        print(f"Fehler beim Speichern der Zeichnungen: {e}")
 
 @app.route('/')
 def index():
@@ -31,19 +41,22 @@ def index():
 
 @socketio.on('connect')
 def handle_connect():
+    # Laden der Zeichnungen beim ersten Verbindungsaufbau
     drawings = load_drawings()
     emit('load_drawings', drawings)
 
 @socketio.on('draw')
 def handle_draw(data):
+    # Zeichnungen empfangen und speichern
     drawings = load_drawings()
     drawings.append(data)
-    save_drawings(drawings)  # Sicherstellen, dass die Zeichnung gespeichert wird
-    emit('draw', data, broadcast=True, include_self=False)  # Sende die Zeichnung an alle Clients
+    save_drawings(drawings)
+    emit('draw', data, broadcast=True, include_self=False)
 
 @socketio.on('clear')
 def handle_clear():
-    save_drawings([])  # Lösche alle Zeichnungen
+    # Alle Zeichnungen löschen
+    save_drawings([])
     emit('clear', broadcast=True)
 
 if __name__ == '__main__':
