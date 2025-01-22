@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'geheimnis!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 DRAWINGS_FILE = 'drawings.json'
 
@@ -46,4 +46,6 @@ def handle_clear():
     emit('clear', broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    # Holen des Ports aus der Umgebung (Render setzt diesen Port automatisch)
+    port = os.environ.get("PORT", 5000)  # Falls kein Port gesetzt ist, benutze 5000 als Fallback
+    socketio.run(app, host='0.0.0.0', port=port)  # Host auf 0.0.0.0 setzen, damit es überall zugänglich ist
