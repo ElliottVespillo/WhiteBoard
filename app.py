@@ -13,7 +13,8 @@ def load_drawings():
     if os.path.exists(DRAWINGS_FILE):
         with open(DRAWINGS_FILE, 'r') as file:
             try:
-                return json.load(file)
+                drawings = json.load(file)
+                return drawings if isinstance(drawings, list) else []
             except json.JSONDecodeError:
                 print("Fehler beim Laden der Zeichnungen.")
                 return []
@@ -37,12 +38,12 @@ def handle_connect():
 def handle_draw(data):
     drawings = load_drawings()
     drawings.append(data)
-    save_drawings(drawings)
-    emit('draw', data, broadcast=True, include_self=False)
+    save_drawings(drawings)  # Sicherstellen, dass die Zeichnung gespeichert wird
+    emit('draw', data, broadcast=True, include_self=False)  # Sende die Zeichnung an alle Clients
 
 @socketio.on('clear')
 def handle_clear():
-    save_drawings([])
+    save_drawings([])  # Lösche alle Zeichnungen
     emit('clear', broadcast=True)
 
 if __name__ == '__main__':
