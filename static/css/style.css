@@ -1,0 +1,28 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#toolbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 10;
+}
+
+button, input[type="color"], input[type="range"] {
+    margin: 5px;
+    padding: 5px;
+    cursor: pointer;
+}
+
+#drawingCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}

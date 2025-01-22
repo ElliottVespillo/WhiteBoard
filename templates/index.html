@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemeinsam Malen</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; }
+        #toolbar {
+            position: absolute; top: 10px; left: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px; border-radius: 5px; z-index: 10;
+        }
+        button, input[type="color"], input[type="range"] { margin: 5px; padding: 5px; cursor: pointer; }
+        #drawingCanvas { position: absolute; top: 0; left: 0; z-index: 1; }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <input type="color" id="colorPicker" value="#000000">
+        <input type="range" id="brushSize" min="1" max="20" value="5">
+        <button id="eraser">Radiergummi</button>
+        <button id="clear">Alles löschen</button>
+    </div>
+    <canvas id="drawingCanvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let color = '#000000';
+        let brushSize = 5;
+        let isEraser = false;
+
+        document.getElementById('colorPicker').addEventListener('change', (e) => {
+            color = e.target.value;
+            isEraser = false;
+        });
+
+        document.getElementById('brushSize').addEventListener('change', (e) => {
+            brushSize = e.target.value;
+        });
+
+        document.getElementById('eraser').addEventListener('click', () => {
+            isEraser = true;
+            color = '#FFFFFF';
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            socket.emit('clear');
+        });
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = getCoordinates(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            let [x, y] = getCoordinates(e);
+            drawLine(lastX, lastY, x, y, color, brushSize);
+            [lastX, lastY] = [x, y];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            return [
+                (e.clientX || e.touches[0].clientX) - rect.left,
+                (e.clientY || e.touches[0].clientY) - rect.top
+            ];
+        }
+
+        function drawLine(x1, y1, x2, y2, color, size, emit = true) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = isEraser ? '#FFFFFF' : color;
+            ctx.lineWidth = size;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            if (emit) {
+                socket.emit('draw', {
+                    x1: x1 / canvas.width,
+                    y1: y1 / canvas.height,
+                    x2: x2 / canvas.width,
+                    y2: y2 / canvas.height,
+                    color: ctx.strokeStyle,
+                    size: size
+                });
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('draw', (data) => {
+            console.log('Received draw event:', data);
+            drawLine(
+                data.x1 * canvas.width,
+                data.y1 * canvas.height,
+                data.x2 * canvas.width,
+                data.y2 * canvas.height,
+                data.color,
+                data.size,
+                false
+            );
+        });
+
+        socket.on('clear', () => {
+            console.log('Received clear event');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        socket.on('load_drawings', (drawings) => {
+            console.log('Received load_drawings event:', drawings);
+            drawings.forEach(data => {
+                drawLine(
+                    data.x1 * canvas.width,
+                    data.y1 * canvas.height,
+                    data.x2 * canvas.width,
+                    data.y2 * canvas.height,
+                    data.color,
+                    data.size,
+                    false
+                );
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            socket.emit('clear');
+        });
+    </script>
+</body>
+</html>
